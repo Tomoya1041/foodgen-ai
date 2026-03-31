@@ -135,15 +135,26 @@ const App = () => {
     // Move side effects out of state updater
     if (!savedIdsRef.current.has(job.id)) {
       savedIdsRef.current.add(job.id);
-      const savedHistory = localStorage.getItem('foodgen_history_pro_v7');
-      let historyArray = [];
-      if (savedHistory) {
-        try {
-          historyArray = JSON.parse(savedHistory);
-        } catch (e) {}
+      try {
+        const savedHistory = localStorage.getItem('foodgen_history_pro_v7');
+        let historyArray = [];
+        if (savedHistory) {
+          try {
+            historyArray = JSON.parse(savedHistory);
+          } catch (e) {}
+        }
+
+        // Menu mode の最終画像は Canvas PNG で大きくなりやすいため、
+        // localStorage には軽量な generatedImageUrl を保存して容量超過を避ける。
+        const jobForStorage: Job = job.mode === GenerationMode.MENU
+          ? { ...job, finalImageUrl: job.generatedImageUrl }
+          : job;
+
+        const newHistory = [jobForStorage, ...historyArray].slice(0, 30);
+        localStorage.setItem('foodgen_history_pro_v7', JSON.stringify(newHistory));
+      } catch (storageError) {
+        console.warn('History persistence skipped due to storage limit:', storageError);
       }
-      const newHistory = [job, ...historyArray].slice(0, 30);
-      localStorage.setItem('foodgen_history_pro_v7', JSON.stringify(newHistory));
     }
   }, []);
 
