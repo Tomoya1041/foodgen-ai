@@ -12,6 +12,34 @@ import {
 import { generateFoodImage, generateDesignConcepts } from './services/geminiService';
 import MenuCanvas from './components/MenuCanvas';
 
+const MAX_IMAGE_SIDE = 1600;
+const JPEG_QUALITY = 0.8;
+
+const compressImageFile = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('画像の読み込みに失敗しました。'));
+    reader.onload = () => {
+      const image = new Image();
+      image.onerror = () => reject(new Error('画像の解析に失敗しました。'));
+      image.onload = () => {
+        const scale = Math.min(1, MAX_IMAGE_SIDE / Math.max(image.width, image.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        const context = canvas.getContext('2d');
+        if (!context) {
+          reject(new Error('画像処理の初期化に失敗しました。'));
+          return;
+        }
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', JPEG_QUALITY));
+      };
+      image.src = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
+
 const App = () => {
   const [mode, setMode] = useState<GenerationMode>(GenerationMode.MENU);
   const [size, setSize] = useState<ImageSize>(ImageSize.SQUARE);
@@ -119,18 +147,19 @@ const App = () => {
     }
   }, []);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setOriginalImage(reader.result as string);
+      try {
+        const optimizedImage = await compressImageFile(file);
+        setOriginalImage(optimizedImage);
         setConcepts([]);
         setSelectedConcept(null);
         setError(null);
         setCurrentJob(null);
-      };
-      reader.readAsDataURL(file);
+      } catch (err: any) {
+        setError(err.message || '画像の準備に失敗しました。');
+      }
     }
   };
 
