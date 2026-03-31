@@ -1,0 +1,7 @@
+{
+  "name": "FoodGen AI - 料理用写真＆季節メニュー生成",
+  "description": "料理写真をアップロードして、プロ仕様の写真素材や販促用メニュー画像を生成します。Gemini 3 Pro Image (Nano Banana Pro) を使用し、料理の原型を維持したまま高品質化します。",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
