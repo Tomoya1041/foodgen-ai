@@ -296,7 +296,7 @@ const App = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col font-sans text-slate-900 overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100/60 flex flex-col font-sans text-slate-900 overflow-x-hidden">
       {/* Googleログインモーダル */}
       {showLoginSetup && (
         <div className="fixed inset-0 z-[200] bg-white flex flex-col items-center justify-center px-8">
@@ -334,7 +334,7 @@ const App = () => {
       )}
 
       {/* ヘッダー */}
-      <header className="px-8 py-8 max-w-7xl mx-auto w-full flex justify-between items-center border-b border-slate-50">
+      <header className="px-8 py-8 max-w-7xl mx-auto w-full flex justify-between items-center border-b border-slate-200/70 backdrop-blur supports-[backdrop-filter]:bg-white/50 sticky top-0 z-30">
         <div className="cursor-pointer group" onClick={resetProject}>
           <h1 className="text-2xl font-light tracking-tighter text-slate-900 flex items-center gap-2">
             FOODGEN <span className="font-bold">PRO</span>
@@ -356,7 +356,7 @@ const App = () => {
             {/* 設定セクション */}
             <div className="lg:col-span-5 space-y-12">
               <section>
-                <div className="flex gap-1 mb-10 border-b border-slate-100">
+                <div className="flex gap-1 mb-10 border-b border-slate-200">
                   <button 
                     onClick={() => setMode(GenerationMode.MENU)}
                     className={`flex-1 py-4 text-[11px] font-black tracking-widest uppercase transition-all duration-300 border-b-2 ${mode === GenerationMode.MENU ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-300 hover:text-slate-400'}`}
@@ -371,7 +371,7 @@ const App = () => {
                   </button>
                 </div>
 
-                <div className="relative group border border-dashed border-slate-200 rounded-sm aspect-video flex items-center justify-center bg-slate-50/50 hover:bg-slate-50 hover:border-slate-400 transition-all duration-500 overflow-hidden cursor-pointer">
+                <div className="relative group border border-dashed border-slate-300 rounded-xl aspect-video flex items-center justify-center bg-white hover:bg-slate-50 hover:border-slate-500 transition-all duration-500 overflow-hidden cursor-pointer shadow-sm">
                   {originalImage ? (
                     <img src={originalImage} className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" alt="Upload preview" />
                   ) : (
@@ -389,23 +389,23 @@ const App = () => {
                     <div className="grid grid-cols-2 gap-4">
                       <input 
                         type="text" placeholder="商品名"
-                        className="bg-slate-50 border-none px-5 py-4 text-[11px] font-bold tracking-widest outline-none transition uppercase placeholder:text-slate-300"
+                        className="bg-white border border-slate-200 rounded-lg px-5 py-4 text-[11px] font-bold tracking-widest outline-none transition uppercase placeholder:text-slate-300 focus:border-slate-500"
                         value={menuText.title} onChange={e => setMenuText({...menuText, title: e.target.value})}
                       />
                       <input 
                         type="text" placeholder="価格"
-                        className="bg-slate-50 border-none px-5 py-4 text-[11px] font-bold tracking-widest outline-none transition uppercase placeholder:text-slate-300"
+                        className="bg-white border border-slate-200 rounded-lg px-5 py-4 text-[11px] font-bold tracking-widest outline-none transition uppercase placeholder:text-slate-300 focus:border-slate-500"
                         value={menuText.price} onChange={e => setMenuText({...menuText, price: e.target.value})}
                       />
                     </div>
                     <input 
                       type="text" placeholder="サブコピー"
-                      className="w-full bg-slate-50 border-none px-5 py-4 text-[11px] font-bold tracking-widest outline-none transition uppercase placeholder:text-slate-300"
+                      className="w-full bg-white border border-slate-200 rounded-lg px-5 py-4 text-[11px] font-bold tracking-widest outline-none transition uppercase placeholder:text-slate-300 focus:border-slate-500"
                       value={menuText.subtitle} onChange={e => setMenuText({...menuText, subtitle: e.target.value})}
                     />
                     <textarea 
                       placeholder="補足指示（例：季節感を出す、背景を明るくする等）"
-                      className="w-full bg-slate-50 border-none px-5 py-4 text-[11px] font-bold tracking-widest outline-none transition uppercase placeholder:text-slate-300 resize-none h-24"
+                      className="w-full bg-white border border-slate-200 rounded-lg px-5 py-4 text-[11px] font-bold tracking-widest outline-none transition uppercase placeholder:text-slate-300 resize-none h-24 focus:border-slate-500"
                       value={customInstructions} onChange={e => setCustomInstructions(e.target.value)}
                     />
                   </div>
@@ -429,7 +429,7 @@ const App = () => {
                           <button 
                             key={c.id}
                             onClick={() => setSelectedConcept(c)}
-                            className={`text-left p-6 border transition-all duration-500 ${selectedConcept?.id === c.id ? 'bg-slate-900 border-slate-900 text-white shadow-xl' : 'bg-white border-slate-100 text-slate-500 hover:border-slate-300 hover:bg-slate-50'}`}
+                            className={`text-left p-6 border rounded-xl transition-all duration-500 ${selectedConcept?.id === c.id ? 'bg-slate-900 border-slate-900 text-white shadow-xl -translate-y-0.5' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-400 hover:bg-slate-50'}`}
                           >
                             <span className="text-[11px] font-black tracking-[0.2em] uppercase block mb-1">{c.label}</span>
                             <p className="text-[10px] opacity-60 font-medium tracking-wide leading-relaxed">{c.description}</p>
@@ -458,7 +458,7 @@ const App = () => {
                     <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase">追加の指示</p>
                     <textarea 
                       placeholder="例：背景を木目調にする、自然光を強調する等"
-                      className="w-full bg-slate-50 border-none px-5 py-4 text-[11px] font-bold tracking-widest outline-none transition uppercase placeholder:text-slate-300 resize-none h-24"
+                      className="w-full bg-white border border-slate-200 rounded-lg px-5 py-4 text-[11px] font-bold tracking-widest outline-none transition uppercase placeholder:text-slate-300 resize-none h-24 focus:border-slate-500"
                       value={customInstructions} onChange={e => setCustomInstructions(e.target.value)}
                     />
                   </div>
@@ -480,7 +480,7 @@ const App = () => {
                   <button 
                     onClick={() => handleGenerate(false)}
                     disabled={isGenerating || (mode === GenerationMode.MENU && !selectedConcept)}
-                    className="w-full py-8 bg-slate-900 text-white text-xs font-black tracking-[0.5em] uppercase disabled:opacity-20 hover:bg-slate-800 transition-all shadow-2xl active:scale-95"
+                    className="w-full py-8 bg-gradient-to-r from-slate-900 to-slate-700 text-white text-xs font-black tracking-[0.5em] uppercase disabled:opacity-20 hover:from-slate-800 hover:to-slate-700 transition-all shadow-xl active:scale-95 rounded-lg"
                   >
                     生成を開始
                   </button>
@@ -513,7 +513,7 @@ const App = () => {
                   </div>
                 </div>
 
-                <div className="relative bg-slate-50 flex items-center justify-center min-h-[500px] shadow-2xl rounded-sm overflow-hidden">
+                <div className="relative bg-white flex items-center justify-center min-h-[500px] shadow-2xl rounded-xl overflow-hidden border border-slate-200">
                    {showOriginal ? (
                      <img src={currentJob.originalImageUrl} className="max-w-full max-h-[80vh] object-contain animate-fade-in" alt="Original" />
                    ) : (
@@ -534,7 +534,7 @@ const App = () => {
 
               <div className="lg:col-span-4 space-y-12 w-full">
                 {/* 修正・調整用セクション */}
-                <div className="space-y-6 bg-slate-50/50 p-8 rounded-sm">
+                <div className="space-y-6 bg-white p-8 rounded-xl border border-slate-200 shadow-sm">
                   <p className="text-[10px] font-black tracking-widest text-slate-900 uppercase">デザインの修正・微調整</p>
                   <textarea 
                     placeholder="例：もっと背景を暗くして、料理を左にもっと寄せて、など具体的な修正指示を入力"
@@ -551,8 +551,8 @@ const App = () => {
                 </div>
 
                 <div className="space-y-4 pt-4 border-t border-slate-50">
-                  <button onClick={downloadImage} className="w-full py-6 bg-slate-900 text-white text-[10px] font-black tracking-[0.4em] uppercase hover:bg-slate-800 transition shadow-xl active:scale-95">ダウンロード</button>
-                  <button onClick={resetProject} className="w-full py-6 border border-slate-100 text-[10px] font-black tracking-[0.4em] uppercase hover:border-slate-900 transition active:scale-95">新規作成</button>
+                  <button onClick={downloadImage} className="w-full py-6 bg-gradient-to-r from-slate-900 to-slate-700 text-white text-[10px] font-black tracking-[0.4em] uppercase hover:from-slate-800 hover:to-slate-700 transition shadow-xl active:scale-95 rounded-lg">ダウンロード</button>
+                  <button onClick={resetProject} className="w-full py-6 border border-slate-300 bg-white rounded-lg text-[10px] font-black tracking-[0.4em] uppercase hover:border-slate-900 transition active:scale-95">新規作成</button>
                   <button 
                     onClick={() => handleGenerate(false)} 
                     className="w-full py-6 text-slate-400 hover:text-slate-900 text-[9px] font-black tracking-[0.4em] uppercase transition underline underline-offset-8"
@@ -573,7 +573,7 @@ const App = () => {
              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-10">
                {history.map((job) => (
                  <div key={`${job.id}-${job.timestamp}`} onClick={() => {setCurrentJob(job); window.scrollTo({top: 0, behavior: 'smooth'})}} className="group cursor-pointer space-y-4">
-                    <div className="aspect-square bg-slate-50 overflow-hidden relative border border-slate-50 shadow-sm transition-all group-hover:shadow-xl">
+                    <div className="aspect-square bg-white overflow-hidden relative border border-slate-200 rounded-lg shadow-sm transition-all group-hover:shadow-xl">
                       <img src={job.finalImageUrl} className="w-full h-full object-cover grayscale opacity-50 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700" alt={`Archive ${job.id}`} />
                     </div>
                     <div className="space-y-1">
