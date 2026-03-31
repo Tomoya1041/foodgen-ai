@@ -67,6 +67,8 @@ const getJstDateKey = () => {
   return `${y}-${m}-${d}`;
 };
 
+const isIntegerLike = (value) => /^-?\d+$/.test(String(value));
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return sendJson(res, 405, { error: "Method not allowed." });
@@ -89,6 +91,11 @@ export default async function handler(req, res) {
     }
 
     quotaKey = `quota:${user.sub}:${getJstDateKey()}`;
+    const rawQuotaValue = await redis.get(quotaKey);
+    if (rawQuotaValue !== null && !isIntegerLike(rawQuotaValue)) {
+      // 手動編集などで quota キーが整数以外になると INCR が失敗するため自動で初期化する。
+      await redis.del(quotaKey);
+    }
     const currentCount = await redis.incr(quotaKey);
     didIncrement = true;
     if (currentCount === 1) {
