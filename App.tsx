@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { CredentialResponse, GoogleLogin } from '@react-oauth/google';
 import { 
   GenerationMode, 
   ImageSize, 
@@ -30,10 +31,10 @@ const App = () => {
   const [error, setError] = useState<string | null>(null);
   const [currentJob, setCurrentJob] = useState<Job | null>(null);
   const [history, setHistory] = useState<Job[]>([]);
-  const [hasApiKey, setHasApiKey] = useState(false);
-  const [apiKey, setApiKey] = useState('');
-  const [apiKeyInput, setApiKeyInput] = useState('');
-  const [showApiKeySetup, setShowApiKeySetup] = useState(false);
+  const [idToken, setIdToken] = useState('');
+  const [userName, setUserName] = useState('');
+  const [showLoginSetup, setShowLoginSetup] = useState(false);
+  const [remainingQuota, setRemainingQuota] = useState<number | null>(null);
   
   const [showOriginal, setShowOriginal] = useState(false);
 
@@ -52,30 +53,45 @@ const App = () => {
       }
     }
 
-    const savedKey = localStorage.getItem('foodgen_gemini_api_key');
-    if (savedKey) {
-      setApiKey(savedKey);
-      setHasApiKey(true);
+    const savedToken = localStorage.getItem('foodgen_google_id_token');
+    const savedUserName = localStorage.getItem('foodgen_google_user_name');
+    if (savedToken) {
+      setIdToken(savedToken);
+      setUserName(savedUserName || '');
     } else {
-      setShowApiKeySetup(true);
+      setShowLoginSetup(true);
     }
   }, []);
 
-  const handleSaveApiKey = () => {
-    const trimmed = apiKeyInput.trim();
-    if (!trimmed) return;
-    localStorage.setItem('foodgen_gemini_api_key', trimmed);
-    setApiKey(trimmed);
-    setHasApiKey(true);
-    setShowApiKeySetup(false);
-    setApiKeyInput('');
+  const handleLoginSuccess = (credentialResponse: CredentialResponse) => {
+    const credential = credentialResponse.credential;
+    if (!credential) {
+      setError('Googleログインに失敗しました。再度お試しください。');
+      return;
+    }
+
+    let parsedName = '';
+    try {
+      const payload = JSON.parse(atob(credential.split('.')[1]));
+      parsedName = payload?.name || payload?.email || '';
+    } catch {
+      parsedName = '';
+    }
+
+    setIdToken(credential);
+    setUserName(parsedName);
+    setShowLoginSetup(false);
+    localStorage.setItem('foodgen_google_id_token', credential);
+    localStorage.setItem('foodgen_google_user_name', parsedName);
   };
 
-  const handleResetApiKey = () => {
-    localStorage.removeItem('foodgen_gemini_api_key');
-    setApiKey('');
-    setHasApiKey(false);
-    setShowApiKeySetup(true);
+  const handleLogout = () => {
+    localStorage.removeItem('foodgen_google_id_token');
+    localStorage.removeItem('foodgen_google_user_name');
+    setIdToken('');
+    setUserName('');
+    setShowLoginSetup(true);
+    setRemainingQuota(null);
   };
 
   const saveToHistory = useCallback((job: Job) => {
@@ -123,7 +139,7 @@ const App = () => {
     setIsAnalyzing(true);
     setError(null);
     try {
-      const ideas = await generateDesignConcepts(originalImage, apiKey);
+      const ideas = await generateDesignConcepts(originalImage, idToken);
       if (ideas && ideas.length > 0) {
         setConcepts(ideas);
         setSelectedConcept(ideas[0]);
@@ -138,8 +154,8 @@ const App = () => {
   };
 
   const handleGenerate = async (isRefining: boolean = false) => {
-    if (!apiKey) {
-      setShowApiKeySetup(true);
+    if (!idToken) {
+      setShowLoginSetup(true);
       return;
     }
 
@@ -159,15 +175,16 @@ const App = () => {
     const instructions = isRefining ? refinementInstructions : customInstructions;
 
     try {
-      const generatedUrl = await generateFoodImage(
+      const generated = await generateFoodImage(
         baseImage,
         mode,
         size,
-        apiKey,
+        idToken,
         assetOption,
         selectedConcept || undefined,
         instructions
       );
+      setRemainingQuota(generated.remainingDailyQuota);
 
       const jobId = Math.random().toString(36).substr(2, 9);
       const newJob: Job = {
@@ -176,8 +193,8 @@ const App = () => {
         mode,
         size,
         originalImageUrl: originalImage!,
-        generatedImageUrl: generatedUrl,
-        finalImageUrl: generatedUrl,
+        generatedImageUrl: generated.imageUrl,
+        finalImageUrl: generated.imageUrl,
         text: mode === GenerationMode.MENU ? { ...menuText } : undefined,
         concept: selectedConcept || undefined,
       };
@@ -190,12 +207,10 @@ const App = () => {
       }
     } catch (err: any) {
       console.error("Generation failed:", err);
-      if (err.message === "KEY_RESET_REQUIRED") {
-        handleResetApiKey();
-        setError("APIキーが有効ではありません。キー設定を確認してください。");
-      } else {
-        setError(err.message || "生成に失敗しました。時間をおいて再度お試しください。");
+      if (String(err.message).includes('ログイン')) {
+        handleLogout();
       }
+      setError(err.message || "生成に失敗しました。時間をおいて再度お試しください。");
     } finally {
       setIsGenerating(false);
     }
@@ -242,38 +257,25 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-white flex flex-col font-sans text-slate-900 overflow-x-hidden">
-      {/* APIキー入力モーダル */}
-      {showApiKeySetup && (
+      {/* Googleログインモーダル */}
+      {showLoginSetup && (
         <div className="fixed inset-0 z-[200] bg-white flex flex-col items-center justify-center px-8">
           <div className="w-full max-w-md space-y-10">
             <div>
               <h2 className="text-2xl font-light tracking-tighter text-slate-900">
                 FOODGEN <span className="font-bold">PRO</span>
               </h2>
-              <p className="text-[9px] tracking-[0.3em] text-slate-400 mt-1 uppercase font-bold">API Key Setup</p>
+              <p className="text-[9px] tracking-[0.3em] text-slate-400 mt-1 uppercase font-bold">Google Login Required</p>
             </div>
             <div className="space-y-4">
-              <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase">Gemini APIキーを入力してください</p>
-              <input
-                type="password"
-                placeholder="AIza..."
-                className="w-full bg-slate-50 border-none px-5 py-4 text-sm outline-none font-mono"
-                value={apiKeyInput}
-                onChange={e => setApiKeyInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSaveApiKey()}
-                autoFocus
-              />
+              <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase">1日7回までの制限管理のためログインしてください</p>
               <p className="text-[9px] text-slate-300 font-medium">
-                キーは端末のlocalStorageに保存されます。外部には送信されません。
+                Googleログイン後に画像生成が利用できます。
               </p>
             </div>
-            <button
-              onClick={handleSaveApiKey}
-              disabled={!apiKeyInput.trim()}
-              className="w-full py-6 bg-slate-900 text-white text-[10px] font-black tracking-[0.4em] uppercase disabled:opacity-20 hover:bg-slate-800 transition"
-            >
-              保存して開始
-            </button>
+            <div className="w-full flex justify-center">
+              <GoogleLogin onSuccess={handleLoginSuccess} onError={() => setError('Googleログインに失敗しました。')} />
+            </div>
           </div>
         </div>
       )}
@@ -300,8 +302,10 @@ const App = () => {
           <p className="text-[9px] tracking-[0.3em] text-slate-400 mt-0.5 uppercase font-bold">Design Intelligence</p>
         </div>
         <div className="flex gap-8 text-[10px] font-black tracking-widest uppercase">
+          {userName && <span className="text-slate-300">{userName}</span>}
+          {remainingQuota !== null && <span className="text-slate-400">残り {remainingQuota} 回</span>}
           <button onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })} className="text-slate-400 hover:text-slate-900 transition">アーカイブ</button>
-          <button onClick={handleResetApiKey} className="text-slate-400 hover:text-slate-900 transition">APIキー</button>
+          <button onClick={handleLogout} className="text-slate-400 hover:text-slate-900 transition">ログアウト</button>
           <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" className="text-slate-400 hover:text-slate-900 transition underline underline-offset-4">利用規約</a>
         </div>
       </header>
