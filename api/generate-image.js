@@ -7,14 +7,14 @@ const oauthClient = new OAuth2Client();
 const redis = Redis.fromEnv();
 
 const SYSTEM_RULES = `
-- PROTECT THE CORE ASSET: Never alter the actual food item from the uploaded image.
-- NO TRANSFORMATIONS: Preserve the exact shape, color, and texture of the food.
-- COMPOSITION: Always place the main food item in the center of the frame. Ensure the subject is fully visible and not cut off at the edges.
-- EDITORIAL QUALITY: High-end commercial food photography (Vogue Food style).
-- LIGHTING: Soft studio side-lighting, natural shadows, professional color grading.
-- BACKGROUND: Minimalist, clean, and elegant. Must not contain text, logos, or distracting elements.
-- NO TEXT: Do not generate any letters, characters, or symbols on the image.
-- DEPTH: Use a shallow depth of field to make the food stand out against a creamy, sophisticated background.
+CRITICAL RULES — NEVER VIOLATE:
+- FOOD INTEGRITY: The uploaded food item must appear EXACTLY as-is. Preserve every detail: shape, color, texture, portion size, plating style. No alterations, enhancements, or replacements.
+- FULL VISIBILITY: The food subject must be completely visible within the frame. Never crop the food at any edge.
+- CENTER COMPOSITION: Place the food subject at the center of the frame in all cases.
+- ABSOLUTE NO TEXT: Zero tolerance for any letters, characters, numbers, symbols, watermarks, or logos anywhere in the image.
+- PROFESSIONAL STANDARD: Output must match the quality of images published in VOGUE Food, Monocle, or Wallpaper magazine editorial spreads.
+- LIGHTING: Precise professional studio lighting. Soft directional key light, subtle fill, controlled shadows with depth.
+- BACKGROUND: Crafted, purposeful background that complements the food. Never generic or stock-photo-like.
 `;
 
 const ASPECT_RATIOS = {
@@ -27,11 +27,19 @@ const ASPECT_RATIOS = {
 
 const PROMPTS = {
   ASSET_PRO:
-    "Commercial high-end food photography for luxury magazine. Soft lighting, centered composition, blurred professional background.",
+    "Luxury commercial food photography for a premium lifestyle magazine. Precise soft-box studio lighting with subtle rim light, shallow depth of field, sophisticated neutral background with fine texture (linen, marble, or brushed concrete). Centered subject, impeccable food styling.",
   ASSET_SIZZLE:
-    "Ultra-macro food photography showing glistening textures, steam, and vibrant fresh details. Focus on appetite appeal, centered subject.",
+    "Ultra-close food photography capturing appetite-triggering details: glistening sauces, rising steam, fresh herb textures, golden crust crunch. Warm directional lighting, rich saturation, centered hero shot with cinematic depth of field.",
   MENU_BASE:
-    "Editorial graphic design canvas. The main dish is positioned in the center to ensure it is fully visible and not cut off. Clean, modern, high-contrast lighting, 8k resolution photography. NO TEXT.",
+    "Premium editorial food photography designed as a graphic design canvas for menu or announcement material. The food subject is centered and completely unobstructed. Background is intentionally crafted with depth, texture, and professional color grading to support typographic overlays. Cinematic lighting, magazine-quality styling. NO TEXT, NO LOGOS, NO WATERMARKS.",
+};
+
+const LAYOUT_PROMPTS = {
+  TOP_CENTER: "Leave the lower 30% of the frame as a clean, uncluttered transition zone. The food occupies the upper and central area with dynamic presence.",
+  BOTTOM_LEFT: "Create atmospheric depth especially in the lower-left region. Rich, moody background with strong directional lighting from upper right. The lower area has natural shadow depth suitable for white text overlay.",
+  OVERLAY_CENTER: "Balanced, symmetrical composition with visual richness throughout. Background has fine texture and depth. Center area is visually interesting but not overly busy, as it will receive a frosted panel overlay.",
+  SIDE_BAR: "Strong right-dominant composition. The right 65% of the frame features the main food subject with dynamic styling. Left side transitions naturally to a softer, less cluttered area.",
+  POP_ART: "High-energy, vibrant, fully saturated food photography. Strong hero shot filling 65% of frame from center-top. Bottom 25% of the frame has slightly softer visual weight to allow for a bold color band overlay.",
 };
 
 const sendJson = (res, status, payload) => {
@@ -108,12 +116,13 @@ export default async function handler(req, res) {
     const ai = new GoogleGenAI({ apiKey });
     const basePrompt =
       mode === "MENU" ? PROMPTS.MENU_BASE : assetOption === "SIZZLE" ? PROMPTS.ASSET_SIZZLE : PROMPTS.ASSET_PRO;
+    const layoutHint = mode === "MENU" && concept?.layoutStyle ? LAYOUT_PROMPTS[concept.layoutStyle] || "" : "";
     const conceptPrompt = concept
-      ? `Directional Concept: ${concept.label}. Professional instructions: ${concept.prompt}. Must prioritize centering the subject to ensure it is fully visible.`
+      ? `Design Direction: "${concept.label}" — ${concept.description}. Composition & Styling Brief: ${concept.prompt}. ${layoutHint}`
       : "";
-    const fullPrompt = `${SYSTEM_RULES}\n\nPrimary Objective: ${basePrompt}\n${conceptPrompt}\n\nUser Notes: ${
+    const fullPrompt = `${SYSTEM_RULES}\n\nPrimary Objective: ${basePrompt}\n\n${conceptPrompt}\n\nAdditional Art Direction: ${
       customInstructions || "None"
-    }\n\nStrict Rule: DO NOT GENERATE ANY TEXT. ONLY PHOTOGRAPHY.`;
+    }\n\nFINAL RULE: ABSOLUTELY NO TEXT, CHARACTERS, OR SYMBOLS OF ANY KIND. PURE PHOTOGRAPHY ONLY.`;
     const mimeType = base64Image.match(/data:(.*?);/)?.[1] || "image/png";
 
     const response = await ai.models.generateContent({

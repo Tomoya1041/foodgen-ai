@@ -54,8 +54,24 @@ export default async function handler(req, res) {
             },
           },
           {
-            text:
-              "この料理写真を分析し、プロのグラフィックデザイナーが制作したような最高峰のデザインコンセプトを4つ提案してください。以下の4つのバリエーションを含めること：\n1. 『ラグジュアリー・エディトリアル』（高級誌の1ページのような静寂と余白）\n2. 『モダン・ミニマル』（洗練された細いラインとタイポグラフィ）\n3. 『都会的なポップ』（参考画像のような鮮やかなバッジと活気ある配色）\n4. 『トラディショナル・クラシック』（温かみのある明朝体と伝統的なレイアウト）\n\n各コンセプトについてJSONで出力してください：\n- id: ユニークなID\n- label: 洗練された日本語のタイトル\n- description: デザインの狙いと期待される効果\n- prompt: 背景生成用の英語プロンプト。料理を中央に配置し、全体がしっかり収まるように指示すること。\n- layoutStyle: 'TOP_CENTER', 'BOTTOM_LEFT', 'OVERLAY_CENTER', 'SIDE_BAR', 'POP_ART' から選択。\n- fontStyle: 'SANS' (ゴシック) または 'SERIF' (明朝)。\n- themeColor: そのコンセプトに最適なアクセントカラー（16進数）",
+            text: `この料理写真を詳細に分析し、世界最高水準のフードグラフィックデザイナーが制作するようなメニュー・告知物のデザインコンセプトを4つ提案してください。VOGUE Food、Monocle、Kinfolk等のグローバルプレミアム誌や三ツ星レストランのメニューを参考基準として、各デザインは実際に印刷・配信できるプロクオリティであることが条件です。
+
+以下の4スタイルを必ず含めること：
+1.「ラグジュアリー・エディトリアル」: VOGUE Foodの見開きページ風。クリーンな白や生成りのパネル、極細のゴールド/シルバーのアクセントライン、繊細な余白設計。layoutStyle: TOP_CENTER を使用。
+2.「モダン・ミニマル」: 三ツ星レストランのメニューカード風。全面写真に上品なグラデーション、左下に整然と積み上げられたタイポグラフィ。layoutStyle: BOTTOM_LEFT を使用。
+3.「アーバン・ダイナミック」: 都市型カフェ・ビストロの告知ポスター風。鮮やかなアクセントカラーブロック、大胆で読みやすいサンセリフ、エネルギッシュな構成。layoutStyle: POP_ART を使用。
+4.「クラシック・プレミアム」: 老舗高級店の格調あるデザイン。明朝体と薄いセリフの組み合わせ、深みのある中央配置、二重罫線のフレーム。layoutStyle: OVERLAY_CENTER を使用。
+
+各コンセプトのJSON出力に必要なフィールド：
+- id: ユニークID（例: "concept_luxury"）
+- label: 洗練された日本語タイトル（10字以内）
+- description: デザイナーの意図（40字以内、体言止め）
+- prompt: 背景生成用英語プロンプト。指定layoutStyleのテキスト配置ゾーンを考慮した構図・照明・スタイリング指示を含めること。料理は必ず画面中央に完全に収めること。NO TEXT, NO LOGOS の制約を明記すること。
+- layoutStyle: 上記指定のものを使用
+- fontStyle: 'SANS'（モダン・都会的）または 'SERIF'（伝統・格式）
+- themeColor: メインアクセントカラー（16進数、例: "#C8A96E"）— デザインの世界観に合う色を厳選
+- bgPanelColor: テキストパネルや背景の基調色（16進数、例: "#FAFAF7"）— 料理の色彩と調和すること
+- textColor: メインテキストカラー（16進数、例: "#1A1A1A"）— bgPanelColorに対して十分なコントラストを確保`,
           },
         ],
       },
@@ -76,8 +92,10 @@ export default async function handler(req, res) {
               },
               fontStyle: { type: Type.STRING, enum: ["SANS", "SERIF"] },
               themeColor: { type: Type.STRING },
+              bgPanelColor: { type: Type.STRING },
+              textColor: { type: Type.STRING },
             },
-            required: ["id", "label", "description", "prompt", "layoutStyle", "fontStyle", "themeColor"],
+            required: ["id", "label", "description", "prompt", "layoutStyle", "fontStyle", "themeColor", "bgPanelColor", "textColor"],
           },
         },
       },

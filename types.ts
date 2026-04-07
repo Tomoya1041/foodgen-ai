@@ -31,6 +31,8 @@ export interface DesignConcept {
   layoutStyle: 'TOP_CENTER' | 'BOTTOM_LEFT' | 'OVERLAY_CENTER' | 'SIDE_BAR' | 'POP_ART';
   fontStyle: 'SANS' | 'SERIF';
   themeColor?: string;
+  bgPanelColor?: string;
+  textColor?: string;
 }
 
 export interface Job {
