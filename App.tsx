@@ -41,7 +41,7 @@ const compressImageFile = (file: File): Promise<string> =>
   });
 
 const App = () => {
-  const [mode, setMode] = useState<GenerationMode>(GenerationMode.MENU);
+  const [mode, setMode] = useState<GenerationMode>(GenerationMode.ASSET);
   const [size, setSize] = useState<ImageSize>(ImageSize.SQUARE);
   const [assetOption, setAssetOption] = useState<AssetOption>(AssetOption.PRO);
   const [menuText, setMenuText] = useState<MenuText>({ title: '', subtitle: '', price: '' });
@@ -357,17 +357,17 @@ const App = () => {
             <div className="lg:col-span-5 space-y-12">
               <section>
                 <div className="flex gap-1 mb-10 border-b border-slate-200">
-                  <button 
-                    onClick={() => setMode(GenerationMode.MENU)}
-                    className={`flex-1 py-4 text-[11px] font-black tracking-widest uppercase transition-all duration-300 border-b-2 ${mode === GenerationMode.MENU ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-300 hover:text-slate-400'}`}
-                  >
-                    メニュー・告知用
-                  </button>
-                  <button 
+                  <button
                     onClick={() => setMode(GenerationMode.ASSET)}
                     className={`flex-1 py-4 text-[11px] font-black tracking-widest uppercase transition-all duration-300 border-b-2 ${mode === GenerationMode.ASSET ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-300 hover:text-slate-400'}`}
                   >
                     写真素材
+                  </button>
+                  <button
+                    onClick={() => setMode(GenerationMode.MENU)}
+                    className={`flex-1 py-4 text-[11px] font-black tracking-widest uppercase transition-all duration-300 border-b-2 ${mode === GenerationMode.MENU ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-300 hover:text-slate-400'}`}
+                  >
+                    メニュー・告知用
                   </button>
                 </div>
 
