@@ -9,8 +9,20 @@ import {
   DesignConcept,
   Job 
 } from './types';
-import { generateFoodImage, generateDesignConcepts } from './services/geminiService';
+import { generateFoodImage } from './services/geminiService';
 import MenuCanvas from './components/MenuCanvas';
+
+const DEFAULT_MENU_CONCEPT: DesignConcept = {
+  id: 'default',
+  label: 'ラグジュアリー・エディトリアル',
+  description: '高級誌の見開きページ風。上品な余白と繊細なタイポグラフィ。',
+  prompt: 'Luxury editorial food photography. Clean, soft studio lighting, centered subject, sophisticated neutral background with fine texture. Magazine-quality styling, NO TEXT, NO LOGOS.',
+  layoutStyle: 'TOP_CENTER',
+  fontStyle: 'SANS',
+  themeColor: '#C8A96E',
+  bgPanelColor: '#FAFAF7',
+  textColor: '#1A1A1A',
+};
 
 const MAX_IMAGE_SIDE = 1600;
 const JPEG_QUALITY = 0.8;
@@ -49,11 +61,6 @@ const App = () => {
   const [refinementInstructions, setRefinementInstructions] = useState('');
   const [originalImage, setOriginalImage] = useState<string | null>(null);
   
-  // デザインコンセプト
-  const [concepts, setConcepts] = useState<DesignConcept[]>([]);
-  const [selectedConcept, setSelectedConcept] = useState<DesignConcept | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-
   // 状態管理
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -174,25 +181,6 @@ const App = () => {
     }
   };
 
-  const handleGetDesignIdeas = async () => {
-    if (!originalImage) return;
-    setIsAnalyzing(true);
-    setError(null);
-    try {
-      const ideas = await generateDesignConcepts(originalImage, idToken);
-      if (ideas && ideas.length > 0) {
-        setConcepts(ideas);
-        setSelectedConcept(ideas[0]);
-      } else {
-        throw new Error("デザイン案の生成に失敗しました。");
-      }
-    } catch (err: any) {
-      setError(err.message || "AI分析中にエラーが発生しました。");
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
   const handleGenerate = async (isRefining: boolean = false) => {
     if (!idToken) {
       setShowLoginSetup(true);
@@ -202,11 +190,6 @@ const App = () => {
     // 修正（リファインメント）の場合は生成済みの画像をベースにし、そうでない場合はオリジナル画像を使用
     const baseImage = isRefining && currentJob ? currentJob.generatedImageUrl : originalImage;
     if (!baseImage) return;
-
-    if (mode === GenerationMode.MENU && !selectedConcept) {
-      setError("デザインアイデアを選択してください。");
-      return;
-    }
 
     setIsGenerating(true);
     setError(null);
@@ -221,7 +204,7 @@ const App = () => {
         size,
         idToken,
         assetOption,
-        selectedConcept || undefined,
+        mode === GenerationMode.MENU ? DEFAULT_MENU_CONCEPT : undefined,
         instructions
       );
       setRemainingQuota(generated.remainingDailyQuota);
@@ -236,7 +219,7 @@ const App = () => {
         generatedImageUrl: generated.imageUrl,
         finalImageUrl: generated.imageUrl,
         text: mode === GenerationMode.MENU ? { ...menuText } : undefined,
-        concept: selectedConcept || undefined,
+        concept: mode === GenerationMode.MENU ? DEFAULT_MENU_CONCEPT : undefined,
       };
 
       setCurrentJob(newJob);
@@ -276,8 +259,6 @@ const App = () => {
   const resetProject = () => {
     setCurrentJob(null);
     setOriginalImage(null);
-    setConcepts([]);
-    setSelectedConcept(null);
     setMenuText({ title: '', subtitle: '', price: '' });
     setError(null);
     setCustomInstructions('');
@@ -321,12 +302,10 @@ const App = () => {
       )}
 
       {/* ローディングオーバーレイ */}
-      {(isGenerating || isAnalyzing) && (
+      {isGenerating && (
         <div className="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center animate-in fade-in duration-300">
           <div className="w-10 h-10 border-2 border-slate-900 border-t-transparent rounded-full animate-spin mb-8" />
-          <p className="text-[10px] font-black tracking-[0.5em] text-slate-900 uppercase">
-            {isAnalyzing ? "DESIGN ANALYSIS" : "GENERATING MASTERPIECE"}
-          </p>
+          <p className="text-[10px] font-black tracking-[0.5em] text-slate-900 uppercase">GENERATING MASTERPIECE</p>
           <p className="mt-4 text-[9px] text-slate-400 font-bold uppercase tracking-widest">
             Please wait while AI creates high-end visuals.
           </p>
@@ -384,60 +363,29 @@ const App = () => {
               </section>
 
               {originalImage && mode === GenerationMode.MENU && (
-                <section className="space-y-8 animate-fade-in">
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <input 
-                        type="text" placeholder="商品名"
-                        className="bg-white border border-slate-200 rounded-lg px-5 py-4 text-[11px] font-bold tracking-widest outline-none transition uppercase placeholder:text-slate-300 focus:border-slate-500"
-                        value={menuText.title} onChange={e => setMenuText({...menuText, title: e.target.value})}
-                      />
-                      <input 
-                        type="text" placeholder="価格"
-                        className="bg-white border border-slate-200 rounded-lg px-5 py-4 text-[11px] font-bold tracking-widest outline-none transition uppercase placeholder:text-slate-300 focus:border-slate-500"
-                        value={menuText.price} onChange={e => setMenuText({...menuText, price: e.target.value})}
-                      />
-                    </div>
-                    <input 
-                      type="text" placeholder="サブコピー"
-                      className="w-full bg-white border border-slate-200 rounded-lg px-5 py-4 text-[11px] font-bold tracking-widest outline-none transition uppercase placeholder:text-slate-300 focus:border-slate-500"
-                      value={menuText.subtitle} onChange={e => setMenuText({...menuText, subtitle: e.target.value})}
+                <section className="space-y-4 animate-fade-in">
+                  <div className="grid grid-cols-2 gap-4">
+                    <input
+                      type="text" placeholder="商品名"
+                      className="bg-white border border-slate-200 rounded-lg px-5 py-4 text-[11px] font-bold tracking-widest outline-none transition uppercase placeholder:text-slate-300 focus:border-slate-500"
+                      value={menuText.title} onChange={e => setMenuText({...menuText, title: e.target.value})}
                     />
-                    <textarea 
-                      placeholder="補足指示（例：季節感を出す、背景を明るくする等）"
-                      className="w-full bg-white border border-slate-200 rounded-lg px-5 py-4 text-[11px] font-bold tracking-widest outline-none transition uppercase placeholder:text-slate-300 resize-none h-24 focus:border-slate-500"
-                      value={customInstructions} onChange={e => setCustomInstructions(e.target.value)}
+                    <input
+                      type="text" placeholder="価格"
+                      className="bg-white border border-slate-200 rounded-lg px-5 py-4 text-[11px] font-bold tracking-widest outline-none transition uppercase placeholder:text-slate-300 focus:border-slate-500"
+                      value={menuText.price} onChange={e => setMenuText({...menuText, price: e.target.value})}
                     />
                   </div>
-
-                  {concepts.length === 0 ? (
-                    <button 
-                      onClick={handleGetDesignIdeas}
-                      disabled={isAnalyzing}
-                      className="w-full py-6 bg-slate-900 text-white text-[10px] font-black tracking-[0.4em] uppercase hover:bg-slate-800 transition"
-                    >
-                      プロデザイナーのアイデアを提案
-                    </button>
-                  ) : (
-                    <div className="space-y-6">
-                      <div className="flex justify-between items-center">
-                        <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase">コンセプト選択</p>
-                        <button onClick={handleGetDesignIdeas} className="text-[9px] font-bold text-slate-300 hover:text-slate-900 transition underline">再提案</button>
-                      </div>
-                      <div className="flex flex-col gap-4">
-                        {concepts.map(c => (
-                          <button 
-                            key={c.id}
-                            onClick={() => setSelectedConcept(c)}
-                            className={`text-left p-6 border rounded-xl transition-all duration-500 ${selectedConcept?.id === c.id ? 'bg-slate-900 border-slate-900 text-white shadow-xl -translate-y-0.5' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-400 hover:bg-slate-50'}`}
-                          >
-                            <span className="text-[11px] font-black tracking-[0.2em] uppercase block mb-1">{c.label}</span>
-                            <p className="text-[10px] opacity-60 font-medium tracking-wide leading-relaxed">{c.description}</p>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  <input
+                    type="text" placeholder="サブコピー"
+                    className="w-full bg-white border border-slate-200 rounded-lg px-5 py-4 text-[11px] font-bold tracking-widest outline-none transition uppercase placeholder:text-slate-300 focus:border-slate-500"
+                    value={menuText.subtitle} onChange={e => setMenuText({...menuText, subtitle: e.target.value})}
+                  />
+                  <textarea
+                    placeholder="補足指示（例：季節感を出す、背景を明るくする等）"
+                    className="w-full bg-white border border-slate-200 rounded-lg px-5 py-4 text-[11px] font-bold tracking-widest outline-none transition uppercase placeholder:text-slate-300 resize-none h-24 focus:border-slate-500"
+                    value={customInstructions} onChange={e => setCustomInstructions(e.target.value)}
+                  />
                 </section>
               )}
 
@@ -479,7 +427,7 @@ const App = () => {
                   </div>
                   <button 
                     onClick={() => handleGenerate(false)}
-                    disabled={isGenerating || (mode === GenerationMode.MENU && !selectedConcept)}
+                    disabled={isGenerating}
                     className="w-full py-8 bg-gradient-to-r from-slate-900 to-slate-700 text-white text-xs font-black tracking-[0.5em] uppercase disabled:opacity-20 hover:from-slate-800 hover:to-slate-700 transition-all shadow-xl active:scale-95 rounded-lg"
                   >
                     生成を開始
